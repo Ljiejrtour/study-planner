@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>讀書計畫時程表</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <h2>安排讀書計畫</h2>
+  <form id="schedule-form" onsubmit="submitSchedule(event)">
+      <label>日期：</label>
+      <input type="date" id="date" required><br><br>
+
+      <label>時間：</label>
+      <input type="time" id="time" required><br><br>
+
+      <label>內容：</label>
+      <input type="text" id="content" placeholder="如：數學第3章" required><br><br>
+
+      <button type="submit">加入計畫</button>
+  </form>
+
+  <h2>今日讀書時程</h2>
+  <table id="schedule-table" border="1" style="width:100%">
+      <thead>
+          <tr>
+              <th>時間</th>
+              <th>內容</th>
+          </tr>
+      </thead>
+      <tbody id="schedule-body">
+          <!-- 顯示今日安排 -->
+      </tbody>
+  </table>
+</body>
+</html>

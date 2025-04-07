@@ -1,0 +1,15 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: auto;
+    text-align: center;
+}
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+li {
+    background: #f0f0f0;
+    margin: 5px 0;
+    padding: 10px;
+}
