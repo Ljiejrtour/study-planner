@@ -1,5 +1,5 @@
 // ⚠️ 改成你實際部署後的 Apps Script 網址
-const apiUrl = "https://script.google.com/macros/s/AKfycbwkbqoGCHeK3h9aGSYVJvRhk79xtDNr9NkLGt9XShJrlMqwJaMvUO9R1SOnNs_YhyXt/exec";
+const apiUrl = "https://script.google.com/macros/s/AKfycbyVlzGbGP5AcNqmbrsL5NvaoGKB927Zg7v_p_BW8lbtUDlwlwBPZBWHWWDPP7oFSJAb/exec";
 
 let fullData = [];
 
@@ -46,7 +46,7 @@ async function fetchAndDisplayToday() {
 
     fullData = data.map(([date, time, content]) => ({
       date,
-      time: time.length > 5 ? new Date(`1970-01-01T${time}`).toTimeString().substring(0, 5) : time,
+      time: time.length > 5 ? time.substring(11, 16) : time,
       content
     }));
 
@@ -81,20 +81,86 @@ function filterSchedule() {
 function renderTable(data) {
   const tbody = document.getElementById("schedule-body");
   tbody.innerHTML = "";
+  fullData = data;
 
   data.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
-  data.forEach(({ date, time, content }) => {
+  data.forEach((item, index) => {
+    const { date, time, content } = item;
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${date}</td>
-      <td>${time}</td>
-      <td>${content}</td>
-    `;
+    <td>${date}</td>
+    <td>${time}</td>
+    <td>${content}</td>
+    <td></td> <!-- 倒數會在這裡填入 -->
+    <td>
+      <button onclick="editSchedule(${index})">編輯</button>
+      <button onclick="deleteSchedule(${index})">刪除</button>
+    </td>
+  `;
+  
+  
     tbody.appendChild(row);
+  });
+  updateCountdown();
+}
+function updateCountdown() {
+  const now = new Date();
+
+  document.querySelectorAll("#schedule-body tr").forEach((row, i) => {
+    const item = fullData[i];
+    const planTime = new Date(`${item.date} ${item.time}`);
+    const diff = planTime - now;
+
+    let countdownText = "";
+    if (diff > 0) {
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      countdownText = `剩 ${hours} 小時 ${mins} 分`;
+    } else {
+      countdownText = "已過期";
+    }
+
+    // 加一欄顯示倒數
+    if (!row.cells[3]) {
+      const td = document.createElement("td");
+      td.textContent = countdownText;
+      row.appendChild(td);
+    } else {
+      row.cells[3].textContent = countdownText;
+    }
   });
 }
 
+
+function editSchedule(index) {
+  const item = fullData[index];
+  document.getElementById("date").value = item.date;
+  document.getElementById("time").value = item.time;
+  document.getElementById("content").value = item.content;
+
+  // 記錄目前編輯的是哪一筆
+  document.getElementById("schedule-form").dataset.editingIndex = index;
+}
+// 🗑️ 刪除功能
+function deleteSchedule(index) {
+  if (!confirm("確定要刪除這項排程嗎？")) return;
+
+  const item = fullData[index];
+  fetch(apiUrl, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "delete", index }),
+  }).then(() => {
+    alert("刪除成功！");
+    fetchAndDisplayToday(); // 重新載入
+  }).catch(err => {
+    alert("刪除失敗：" + err.message);
+  });
+}
 // 日期格式 yyyy-mm-dd
 function formatDate(d) {
   const yyyy = d.getFullYear();
@@ -113,3 +179,4 @@ new Sortable(document.getElementById("schedule-body"), {
 
 // 載入時顯示今天及之後的資料
 window.addEventListener("DOMContentLoaded", fetchAndDisplayToday);
+setInterval(updateCountdown, 60000); // 每分鐘更新倒數
