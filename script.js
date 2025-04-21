@@ -44,11 +44,16 @@ async function fetchAndDisplayToday() {
     const res = await fetch(apiUrl);
     const data = await res.json();
 
-    fullData = data.map(([date, time, content]) => ({
-      date,
-      time: time.length > 5 ? time.substring(11, 16) : time,
-      content
-    }));
+    fullData = data.slice(1).map(([date, time, content]) => {
+      const parsedDate = new Date(date);
+      const parsedTime = time.length > 5 ? new Date(time).toTimeString().substring(0, 5) : time;
+    
+      return {
+        date: formatDate(parsedDate), // yyyy-mm-dd 格式
+        time: parsedTime,
+        content
+      };
+    });
 
     filterSchedule(); // 根據篩選顯示
   } catch (err) {
