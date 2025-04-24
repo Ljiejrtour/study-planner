@@ -66,27 +66,51 @@ async function fetchAndDisplayToday() {
 function filterSchedule() {
   const range = document.getElementById("filter-range").value;
   const now = new Date();
+
   const todayStr = formatDate(now);
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
+  const endOfWeek = new Date(now);
+
+  // 設定為週一（JavaScript 預設週日為 0）
+  const day = now.getDay(); // 0（日）~ 6（六）
+  const diffToMonday = (day === 0 ? -6 : 1 - day); // 週日就回溯 6 天
+  startOfWeek.setDate(now.getDate() + diffToMonday);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  // 設定為週日
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
   let filtered = fullData;
 
   if (range === "week") {
-    filtered = fullData.filter(item => new Date(item.date) >= startOfWeek);
+    filtered = fullData.filter(item => {
+      const itemDate = new Date(item.date);
+      return itemDate >= startOfWeek && itemDate <= endOfWeek;
+    });
   } else if (range === "month") {
-    filtered = fullData.filter(item => new Date(item.date) >= startOfMonth);
+    filtered = fullData.filter(item => {
+      const itemDate = new Date(item.date);
+      return itemDate >= startOfMonth && itemDate <= endOfMonth;
+    });
   }
 
   renderTable(filtered);
+
+  // 更新今日數量
+  const todayCount = fullData.filter(item => item.date === formatDate(now)).length;
+  document.getElementById("today-count").textContent = todayCount;
 }
+
 
 // 顯示資料在表格中
 function renderTable(data) {
   const tbody = document.getElementById("schedule-body");
   tbody.innerHTML = "";
-  fullData = data;
+  //fullData = data;
 
   data.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
@@ -99,7 +123,7 @@ function renderTable(data) {
     <td>${content}</td>
     <td></td> <!-- 倒數會在這裡填入 -->
     <td>
-      <button onclick="editSchedule(${index})">編輯</button>
+    <button onclick="editScheduleFromFiltered(${index})">編輯</button>
       <button onclick="deleteSchedule(${index})">刪除</button>
     </td>
   `;
@@ -114,7 +138,10 @@ function updateCountdown() {
 
   document.querySelectorAll("#schedule-body tr").forEach((row, i) => {
     const item = fullData[i];
-    const planTime = new Date(`${item.date} ${item.time}`);
+    const [yyyy, mm, dd] = item.date.split("-");
+    const [hh, min] = item.time.split(":");
+    const planTime = new Date(yyyy, mm - 1, dd, hh, min);
+
     const diff = planTime - now;
 
     let countdownText = "";
@@ -136,17 +163,25 @@ function updateCountdown() {
     }
   });
 }
-
-
-function editSchedule(index) {
-  const item = fullData[index];
+function editScheduleFromFiltered(index) {
+  const data = document.getElementById("filter-range").value === "all" ? fullData : getFilteredData(); // 判斷用哪個資料來源
+  const item = data[index];
   document.getElementById("date").value = item.date;
   document.getElementById("time").value = item.time;
   document.getElementById("content").value = item.content;
-
-  // 記錄目前編輯的是哪一筆
   document.getElementById("schedule-form").dataset.editingIndex = index;
 }
+
+
+//function editSchedule(index) {
+  //const item = fullData[index];
+  //document.getElementById("date").value = item.date;
+  //document.getElementById("time").value = item.time;
+  //document.getElementById("content").value = item.content;
+
+  // 記錄目前編輯的是哪一筆
+  //ocument.getElementById("schedule-form").dataset.editingIndex = index;
+//}
 // 🗑️ 刪除功能
 function deleteSchedule(index) {
   if (!confirm("確定要刪除這項排程嗎？")) return;
